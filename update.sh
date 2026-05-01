@@ -2,6 +2,9 @@
 # Incremental update for GPT Image Prompts Gallery
 cd "$(dirname "$0")"
 
+# Activate virtual environment
+source .venv/bin/activate
+
 echo "========================================="
 echo "  GPT Image Prompts — Data Update"
 echo "========================================="
@@ -12,14 +15,14 @@ if [ ! -f "data/prompts.json" ]; then
   exit 1
 fi
 
-OLD_COUNT=$(python3 -c "import json; d=json.load(open('data/prompts.json')); print(d.get('total', 0))")
+OLD_COUNT=$(python -c "import json; d=json.load(open('data/prompts.json')); print(d.get('total', 0))")
 echo "Current prompts: $OLD_COUNT"
 echo "Checking for updates..."
 echo ""
 
-python3 scripts/fetch_data.py --update
+python scripts/fetch_data.py --update
 
-NEW_COUNT=$(python3 -c "import json; d=json.load(open('data/prompts.json')); print(d.get('total', 0))")
+NEW_COUNT=$(python -c "import json; d=json.load(open('data/prompts.json')); print(d.get('total', 0))")
 ADDED=$((NEW_COUNT - OLD_COUNT))
 
 echo ""
