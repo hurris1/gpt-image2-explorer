@@ -15,7 +15,9 @@ function getFilteredItems() {
       const q = searchQuery.toLowerCase();
       const haystack = [
         item.title,
+        item.title_zh,
         item.description,
+        item.description_zh,
         item.prompt_en,
         item.prompt_zh,
         (item.tags || []).join(' '),

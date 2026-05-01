@@ -63,6 +63,34 @@ source .venv/bin/activate
 python scripts/fetch_data.py --full
 ```
 
+## 添加中文标题/摘要
+
+每个 Prompt 条目有两个可选的中文字段：
+
+| 字段 | 说明 | 默认行为 |
+|------|------|----------|
+| `title_zh` | 中文标题 | 为空时自动使用英文 `title` |
+| `description_zh` | 中文摘要 | 为空时自动使用英文 `description` |
+
+**如何添加中文标题：**
+
+直接编辑 `data/prompts.json`，找到对应的条目，填写 `title_zh` 和/或 `description_zh` 字段。例如：
+
+```json
+{
+  "id": "evo_113",
+  "title": "E-commerce Main Image - Luxury Amber Perfume Ad",
+  "title_zh": "电商主图 - 琥珀香水广告",
+  "description": "A luxurious cinematic product photograph...",
+  "description_zh": "一张奢华的琥珀香水电影级产品摄影...",
+  ...
+}
+```
+
+填写后刷新页面，切换到中文即可看到中文标题和摘要。
+
+> **注意：** 增量更新（`bash update.sh`）不会覆盖已有的 `title_zh` / `description_zh`。全量拉取（`python scripts/fetch_data.py --full`）会重置所有数据，填写的中文标题会丢失，请提前备份。
+
 ## 开发说明
 
 - Python 仅需标准库，无外部依赖

@@ -205,7 +205,9 @@ def parse_evo_case_md(filepath):
         results.append({
             "id": f"evo_{case_num}",
             "title": clean_title,
+            "title_zh": "",
             "description": desc,
+            "description_zh": "",
             "category": category,
             "tags": [category],
             "prompt_en": prompt_text if not has_chinese else "",
@@ -442,7 +444,9 @@ def process_gpt2_items(data):
         results.append({
             "id": f"gpt2_{item_id}",
             "title": title,
+            "title_zh": "",
             "description": description,
+            "description_zh": "",
             "category": category,
             "tags": tags,
             "prompt_en": prompt_en,
@@ -693,13 +697,17 @@ def cmd_update():
         existing_items.extend(new_gpt2_prompts)
 
     all_prompts = existing_items
-    # Ensure category labels
+    # Ensure category labels and zh fields exist
     for p in all_prompts:
         if "category_en" not in p:
             cat = p.get("category", "comparison")
             labels = CATEGORY_LABELS.get(cat, {"en": cat, "zh": cat})
             p["category_en"] = labels["en"]
             p["category_zh"] = labels["zh"]
+        if "title_zh" not in p:
+            p["title_zh"] = ""
+        if "description_zh" not in p:
+            p["description_zh"] = ""
 
     save_prompts(all_prompts, OUTPUT_FILE)
     new_commit = get_evo_commit() if (EVO_CACHE / ".git").exists() else old_commit

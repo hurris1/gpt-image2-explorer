@@ -1,8 +1,9 @@
 // app.js — Main application
 
-// ---- DOM refs ----
+// ---- Helpers ----
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
+function escapeHTML(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', async () => {
@@ -96,13 +97,13 @@ function createCard(item, lang, query) {
   div.dataset.id = item.id;
 
   const catLabel = lang === 'zh' ? item.category_zh : item.category_en;
-  const title = item.title || item.description;
-  const desc = item.description || '';
+  const title = (lang === 'zh' && item.title_zh) ? item.title_zh : (item.title || item.description);
+  const desc = (lang === 'zh' && item.description_zh) ? item.description_zh : (item.description || '');
   const titleHtml = highlightText(title, query);
   const descHtml = highlightText(desc, query);
 
   const imageHtml = item.image
-    ? `<img class="card-image" data-src="images/${item.image}" src="" alt="${title}" loading="lazy">`
+    ? `<img class="card-image" data-src="images/${item.image}" src="" alt="${escapeHTML(title)}" loading="lazy">`
     : `<div class="card-image-placeholder">🖼</div>`;
 
   div.innerHTML = `
@@ -190,11 +191,13 @@ function openModal(item) {
   // Store current item for tab switching
   $('#modalOverlay')._currentItem = item;
 
+  const modalTitle = (lang === 'zh' && item.title_zh) ? item.title_zh : (item.title || item.description);
+
   $('#modalImg').src = item.image ? `images/${item.image}` : '';
-  $('#modalImg').alt = item.title;
+  $('#modalImg').alt = modalTitle;
   $('#modalImage').style.display = item.image ? '' : 'none';
 
-  $('#modalTitle').textContent = item.title || item.description;
+  $('#modalTitle').textContent = modalTitle;
   $('#modalCategory').textContent = lang === 'zh' ? item.category_zh : item.category_en;
   $('#modalSource').textContent = item.source;
 
