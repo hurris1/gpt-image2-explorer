@@ -140,11 +140,22 @@ def parse_evo_case_md(filepath):
         else:
             author_name = ""
 
-        # Extract image reference (markdown or HTML img tag)
-        image_match = re.search(r'!\[.*?\]\((\./images/\S+)\)', block)
-        if not image_match:
-            image_match = re.search(r'src="(\./images/\S+)"', block)
-        image_path = image_match.group(1) if image_match else ""
+        # Extract image reference (markdown, relative HTML, or absolute URL)
+        image_path = ""
+        # 1. Markdown image: ![alt](./images/foo/bar.jpg)
+        m = re.search(r'!\[.*?\]\((\./images/\S+)\)', block)
+        if m:
+            image_path = m.group(1)
+        # 2. Relative HTML: <img src="./images/foo/bar.jpg">
+        if not image_path:
+            m = re.search(r'src="(\./images/[^"]+)"', block)
+            if m:
+                image_path = m.group(1)
+        # 3. Absolute GitHub URL: src="https://raw.githubusercontent.com/.../images/foo/bar.jpg"
+        if not image_path:
+            m = re.search(r'src="https://raw\.githubusercontent\.com/\S+?/(images/\S+?)"', block)
+            if m:
+                image_path = "./" + m.group(1)
 
         # Extract prompt text (content after image, in code block or directly)
         prompt_text = ""
