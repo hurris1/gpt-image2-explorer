@@ -203,7 +203,7 @@ def parse_evo_case_md(filepath):
             desc = clean_title
 
         results.append({
-            "id": f"evo_{case_num}",
+            "id": f"evo_{category}_{case_num}",
             "title": clean_title,
             "title_zh": "",
             "description": desc,
@@ -234,15 +234,14 @@ def process_evo_cases(evo_dir, changed_files=None):
     primary_cats = list(CATEGORY_MAP.keys())
 
     # Parse English files first
-    en_prompts = {}  # key: (category, case_num) -> prompt dict
+    en_prompts = {}
     for cat in primary_cats:
         en_file = cases_dir / f"{cat}.md"
         if en_file.exists():
             prompts = parse_evo_case_md(en_file)
             for p in prompts:
-                key = (p["category"], p["id"])
                 p["prompt_zh"] = ""  # Clear - will fill from zh-CN
-                en_prompts[key] = p
+                en_prompts[p["id"]] = p
 
     # Parse Chinese files and merge
     for cat in primary_cats:
@@ -250,14 +249,13 @@ def process_evo_cases(evo_dir, changed_files=None):
         if zh_file.exists():
             zh_prompts = parse_evo_case_md(zh_file)
             for p in zh_prompts:
-                key = (p["category"], p["id"])
-                if key in en_prompts:
+                if p["id"] in en_prompts:
                     # Merge: use Chinese text as prompt_zh
-                    en_prompts[key]["prompt_zh"] = p["prompt_zh"] or p["prompt_en"]
+                    en_prompts[p["id"]]["prompt_zh"] = p["prompt_zh"] or p["prompt_en"]
                 else:
-                    # Chinese-only entry (unlikely but handle)
+                    # Chinese-only entry
                     p["prompt_en"] = ""
-                    en_prompts[key] = p
+                    en_prompts[p["id"]] = p
 
     all_prompts = list(en_prompts.values())
     log(f"  EvoLinkAI: {len(all_prompts)} merged prompts (en+zh)")
@@ -527,6 +525,73 @@ def download_gpt2_images(items, limit=None):
 
 # ---- Merge & Save ----
 
+def load_existing_translations():
+    """Load zh translations from existing prompts.json.
+    Returns dict[id] = {prompt_zh, title_zh, description_zh}
+    Handles old-format evo IDs (evo_113 → evo_poster_113) via category field.
+    """
+    if not OUTPUT_FILE.exists():
+        return {}
+    try:
+        old = json.loads(OUTPUT_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    translations = {}
+    old_evo_re = re.compile(r'^evo_(\d+)$')
+
+    for item in old.get("items", []):
+        zh = {}
+        if item.get("prompt_zh"):
+            zh["prompt_zh"] = item["prompt_zh"]
+        if item.get("title_zh"):
+            zh["title_zh"] = item["title_zh"]
+        if item.get("description_zh"):
+            zh["description_zh"] = item["description_zh"]
+        if not zh:
+            continue
+
+        item_id = item["id"]
+
+        # Direct match (gpt2 items and new-format evo items)
+        translations[item_id] = zh
+
+        # Old-format evo ID → also map by new format
+        m = old_evo_re.match(item_id)
+        if m:
+            cat = item.get("category", "")
+            if cat:
+                new_id = f"evo_{cat}_{m.group(1)}"
+                translations[new_id] = zh
+
+    log(f"  Loaded translations for {len(translations)} existing items")
+    return translations
+
+
+def apply_translations(prompts, translations):
+    """Apply preserved zh translations to new prompts, keeping existing
+    translations when the new data has none or only English."""
+    re_cn = re.compile(r'[一-鿿]')
+    for p in prompts:
+        existing = translations.get(p["id"])
+        if not existing:
+            continue
+
+        # prompt_zh: prefer translated Chinese over source data
+        new_pz = p.get("prompt_zh", "")
+        has_cn = bool(new_pz and re_cn.search(new_pz))
+        if not has_cn and existing.get("prompt_zh"):
+            p["prompt_zh"] = existing["prompt_zh"]
+
+        # title_zh
+        if not p.get("title_zh") and existing.get("title_zh"):
+            p["title_zh"] = existing["title_zh"]
+
+        # description_zh
+        if not p.get("description_zh") and existing.get("description_zh"):
+            p["description_zh"] = existing["description_zh"]
+
+
 def merge_prompts(evo_prompts, gpt2_prompts):
     """Merge prompts from both sources, deduplicating by title similarity."""
     all_prompts = evo_prompts + gpt2_prompts
@@ -618,9 +683,11 @@ def cmd_full():
     log(f"  Downloading images (this will take a while)...")
     download_gpt2_images(gpt2_prompts)
 
-    # Merge & Save
-    log("Merging and saving...")
+    # Merge, preserve translations, save
+    log("Merging and preserving translations...")
     all_prompts = merge_prompts(evo_prompts, gpt2_prompts)
+    translations = load_existing_translations()
+    apply_translations(all_prompts, translations)
     save_prompts(all_prompts, OUTPUT_FILE)
     save_sync_state(evo_commit, gpt2_etag, len(all_prompts))
 
@@ -686,8 +753,21 @@ def cmd_update():
         old_data = json.loads(OUTPUT_FILE.read_text(encoding="utf-8"))
         existing_items = old_data.get("items", [])
 
-    # Remove old evo items that were updated, add new ones
+    # Remove old evo items that were updated, add new ones (preserving translations)
     if new_evo_prompts:
+        # Build translation lookup from OLD evo items
+        evo_translations = {}
+        for p in existing_items:
+            if p.get("source") == "evolinkai":
+                zh = {}
+                if p.get("prompt_zh"): zh["prompt_zh"] = p["prompt_zh"]
+                if p.get("title_zh"): zh["title_zh"] = p["title_zh"]
+                if p.get("description_zh"): zh["description_zh"] = p["description_zh"]
+                if zh:
+                    evo_translations[p["id"]] = zh
+        # Apply to new evo prompts
+        apply_translations(new_evo_prompts, evo_translations)
+
         new_evo_ids = {p["id"] for p in new_evo_prompts}
         existing_items = [p for p in existing_items if p["id"] not in new_evo_ids]
         existing_items.extend(new_evo_prompts)
