@@ -5,3 +5,6 @@ __pycache__/
 .claude/
 *.bak
 .venv/
+.env
+data/translation*.log
+data/translation_progress.json
