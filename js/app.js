@@ -151,6 +151,21 @@ function updateResultInfo(total) {
   }
 }
 
+// ---- Image Retry ----
+function loadImageWithRetry(img, src, retries = 3) {
+  img.src = src;
+  img._retries = retries;
+  img.addEventListener('error', function onErr() {
+    if (img._retries > 0) {
+      img._retries--;
+      const backoff = (3 - img._retries) * 300;
+      setTimeout(() => { img.src = src; }, backoff);
+    } else {
+      img.removeEventListener('error', onErr);
+    }
+  });
+}
+
 // ---- Lazy Loading ----
 function lazyLoadImages() {
   const imgs = $$('.card-image[data-src]');
@@ -158,7 +173,7 @@ function lazyLoadImages() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const img = entry.target;
-        img.src = img.dataset.src;
+        loadImageWithRetry(img, img.dataset.src);
         img.removeAttribute('data-src');
         observer.unobserve(img);
       }

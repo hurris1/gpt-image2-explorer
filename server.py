@@ -22,7 +22,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 HOST = "0.0.0.0"
 
 def main():
-    with socketserver.TCPServer((HOST, PORT), Handler) as httpd:
+    with socketserver.ThreadingTCPServer((HOST, PORT), Handler) as httpd:
         print(f"\n  GPT Image Prompts Gallery")
         print(f"  Local:   http://localhost:{PORT}")
         print(f"  Network: http://10.10.10.87:{PORT}")
