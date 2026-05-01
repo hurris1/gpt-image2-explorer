@@ -258,35 +258,39 @@ function closeModal() {
 }
 
 // ---- Copy ----
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.left = '-9999px'; ta.style.top = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      ok ? resolve() : reject(new Error('execCommand failed'));
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 function copyPrompt(item) {
   const lang = AppState.lang;
-  const activeTab = document.querySelector('.modal-tab.active');
-  let text;
-
-  if (activeTab && activeTab.dataset.tab === 'zh' && item.prompt_zh) {
-    text = item.prompt_zh;
-  } else {
-    text = item.prompt_en || item.prompt_zh || '';
-  }
-
-  navigator.clipboard.writeText(text).then(() => {
+  const text = (lang === 'zh' && item.prompt_zh) ? item.prompt_zh : (item.prompt_en || item.prompt_zh || '');
+  copyToClipboard(text).then(() => {
     showToast(t('copied'));
   }).catch(() => {
-    // Fallback
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast(t('copied'));
+    showToast('Copy failed');
   });
 }
 
 function copyModalPrompt() {
   const text = $('#modalPrompt').textContent;
-  navigator.clipboard.writeText(text).then(() => {
+  copyToClipboard(text).then(() => {
     const btn = $('#modalCopyBtn');
     btn.classList.add('copied');
     btn.textContent = t('copied');
@@ -296,14 +300,7 @@ function copyModalPrompt() {
     }, 1500);
     showToast(t('copied'));
   }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast(t('copied'));
+    showToast('Copy failed');
   });
 }
 
