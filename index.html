@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT Image Prompts Gallery</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <h1 class="logo">🖼 GPT Image Prompts</h1>
+    <span class="total-count" id="totalCount">-- prompts</span>
+  </div>
+  <div class="header-right">
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" data-zh-placeholder="搜索提示词、标题、标签..." data-en-placeholder="Search prompts, titles, tags..." placeholder="搜索提示词、标题、标签...">
+      <button class="search-clear hidden" id="searchClear">&times;</button>
+    </div>
+    <button class="lang-switch" id="langSwitch" title="Switch Language">EN</button>
+  </div>
+</header>
+
+<div class="main-container">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <h3 class="sidebar-title" data-zh="数据来源" data-en="Source">数据来源</h3>
+      <div class="filter-list" id="sourceFilters">
+        <button class="filter-item active" data-source="all">
+          <span class="filter-name" data-zh="全部" data-en="All">全部</span>
+          <span class="filter-count" id="countAll">--</span>
+        </button>
+        <button class="filter-item" data-source="evolinkai">
+          <span class="filter-name">EvoLinkAI</span>
+          <span class="filter-count" id="countEvo">--</span>
+        </button>
+        <button class="filter-item" data-source="gpt-image2">
+          <span class="filter-name">GPT Image 2</span>
+          <span class="filter-count" id="countGpt2">--</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3 class="sidebar-title" data-zh="分类" data-en="Categories">分类</h3>
+      <div class="filter-list" id="categoryFilters">
+      </div>
+    </div>
+
+    <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar">◀</button>
+  </aside>
+
+  <main class="content" id="content">
+    <div class="toolbar">
+      <div class="active-filters" id="activeFilters">
+        <span class="filter-badge" id="badgeSource" style="display:none">
+          <span class="badge-text"></span>
+          <button class="badge-remove">&times;</button>
+        </span>
+        <span class="filter-badge" id="badgeCategory" style="display:none">
+          <span class="badge-text"></span>
+          <button class="badge-remove">&times;</button>
+        </span>
+      </div>
+      <span class="result-info" id="resultInfo"></span>
+    </div>
+
+    <div class="card-grid" id="cardGrid">
+    </div>
+
+    <div class="pagination" id="pagination">
+      <button class="load-more" id="loadMore" data-zh="加载更多" data-en="Load More">加载更多</button>
+    </div>
+
+    <div class="empty-state hidden" id="emptyState">
+      <p data-zh="没有找到匹配的提示词" data-en="No matching prompts found">没有找到匹配的提示词</p>
+    </div>
+  </main>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <div class="modal-body">
+      <div class="modal-image" id="modalImage">
+        <img src="" alt="" id="modalImg">
+      </div>
+      <div class="modal-info">
+        <h2 class="modal-title" id="modalTitle"></h2>
+        <div class="modal-meta">
+          <span class="modal-category" id="modalCategory"></span>
+          <span class="modal-source" id="modalSource"></span>
+          <span class="modal-author" id="modalAuthor"></span>
+        </div>
+        <div class="modal-tabs">
+          <button class="modal-tab active" data-tab="en">English Prompt</button>
+          <button class="modal-tab" data-tab="zh">中文提示词</button>
+        </div>
+        <div class="modal-prompt-container">
+          <pre class="modal-prompt" id="modalPrompt"></pre>
+          <button class="copy-btn modal-copy" id="modalCopyBtn" data-zh="复制" data-en="Copy">复制</button>
+        </div>
+        <a class="modal-link" id="modalLink" target="_blank" data-zh="查看原始来源 →" data-en="View Source →">查看原始来源 →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast hidden" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/search.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
