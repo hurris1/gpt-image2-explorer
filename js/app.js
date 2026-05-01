@@ -7,6 +7,7 @@ function escapeHTML(str) { const d = document.createElement('div'); d.textConten
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
   await loadData();
   renderAll();
   bindEvents();
@@ -103,7 +104,7 @@ function createCard(item, lang, query) {
   const descHtml = highlightText(desc, query);
 
   const imageHtml = item.image
-    ? `<img class="card-image" data-src="images/${item.image}" src="" alt="${escapeHTML(title)}" loading="lazy">`
+    ? `<div class="card-image-wrapper"><div class="skeleton"></div><img class="card-image" data-src="images/${item.image}" src="" alt="${escapeHTML(title)}" loading="lazy"></div>`
     : `<div class="card-image-placeholder">🖼</div>`;
 
   div.innerHTML = `
@@ -174,6 +175,15 @@ function lazyLoadImages() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const img = entry.target;
+        img.addEventListener('load', () => {
+          img.classList.add('loaded');
+          const skeleton = img.parentElement?.querySelector('.skeleton');
+          if (skeleton) skeleton.remove();
+        });
+        img.addEventListener('error', () => {
+          const skeleton = img.parentElement?.querySelector('.skeleton');
+          if (skeleton) skeleton.remove();
+        });
         loadImageWithRetry(img, img.dataset.src);
         img.removeAttribute('data-src');
         observer.unobserve(img);
@@ -193,8 +203,10 @@ function openModal(item) {
 
   const modalTitle = (lang === 'zh' && item.title_zh) ? item.title_zh : (item.title || item.description);
 
+  $('#modalImg').classList.remove('loaded');
   $('#modalImg').src = item.image ? `images/${item.image}` : '';
   $('#modalImg').alt = modalTitle;
+  $('#modalImg').addEventListener('load', () => $('#modalImg').classList.add('loaded'), { once: true });
   $('#modalImage').style.display = item.image ? '' : 'none';
 
   $('#modalTitle').textContent = modalTitle;
@@ -523,4 +535,36 @@ function bindEvents() {
     $('#sidebar').classList.toggle('collapsed');
   });
 
+  // Theme toggle
+  $('#themeToggle').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+  });
+
+  // Back to top
+  window.addEventListener('scroll', () => {
+    const btn = $('#backToTop');
+    btn.classList.toggle('visible', window.scrollY > 600);
+  });
+  $('#backToTop').addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+}
+
+// ---- Theme ----
+function initTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved) {
+    setTheme(saved);
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    setTheme('dark');
+  }
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  $('#themeToggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('theme', theme);
 }
